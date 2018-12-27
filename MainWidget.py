@@ -244,6 +244,10 @@ class ThreadVideo(QThread):
         
     #中断视频检测
     def slotVideoDetect(self):
+        #如果已经暂停，那么先恢复播放，然后才能正常退出
+        if self.pause is True: 
+            self.slotPauseContinue()
+            
         self.mutex.lock()
         self.keepRunning = False
         self.mutex.unlock()
