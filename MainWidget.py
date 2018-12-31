@@ -62,15 +62,19 @@ class MainWidget(QWidget):
         self.__layoutLeft.addWidget(self.__btnChoose)
         
         self.__btnDetect = QPushButton(self)
-        self.__btnDetect.setText("开始检测")
+        self.__btnDetect.setText("检测视频")
         self.__layoutLeft.addWidget(self.__btnDetect)
+        
+        self.__btnPlay = QPushButton(self)
+        self.__btnPlay.setText("播放视频")
+        self.__layoutLeft.addWidget(self.__btnPlay)
         
         self.__btnPause = QPushButton(self)
         self.__btnPause.setText("暂停/继续")
         self.__layoutLeft.addWidget(self.__btnPause)
         
         self.__btnEnd = QPushButton(self)
-        self.__btnEnd.setText("结束检测")
+        self.__btnEnd.setText("结束活动")
         self.__layoutLeft.addWidget(self.__btnEnd)
         
         self.__btnClear = QPushButton(self)
@@ -119,6 +123,7 @@ class MainWidget(QWidget):
         self.__btnClear.clicked.connect(self.clearScreen)
         self.__sliderBright.valueChanged.connect(self.brightnessChange)
         self.__btnPause.clicked.connect(self.pauseOrContinue)
+        self.__btnPlay.clicked.connect(self.playVideo)
         
     def updateVideoInfo(self):
         self.__labelInfo.setText("当前视频: " + self.currentVideo)
@@ -131,7 +136,7 @@ class MainWidget(QWidget):
         while self.threadVideo.isRunning():
             pass
             
-        self.currentVideo, fileType = QFileDialog.getOpenFileName(self)
+        self.currentVideo, fileType = QFileDialog.getOpenFileName(self, "选择视频", "..\\", "video(*)")
         print(fileType)
         self.updateVideoInfo()
         
@@ -155,6 +160,7 @@ class MainWidget(QWidget):
             self.videoDetector.loadTrained(r".\models\model-mine", useDefault=False)
         
         if not self.threadVideo.isRunning():
+            self.threadVideo.switchPlay(playOnly=False) #设置为非播放模式
             self.threadVideo.start() #启动线程
         
     def stopDetectVideo(self):
@@ -166,6 +172,12 @@ class MainWidget(QWidget):
     #暂停/继续
     def pauseOrContinue(self):
         self.sigPause.emit()
+        
+    #控制线程进入纯播放模式
+    def playVideo(self):
+        self.threadVideo.switchPlay(playOnly=True)
+        if not self.threadVideo.isRunning():
+            self.threadVideo.start()
             
     def brightnessChange(self, value):
         newBrightness = round( value / 99, 2);
@@ -199,6 +211,7 @@ class ThreadVideo(QThread):
         self.pause = False #暂停标志
         
         self.timeInterval = 20
+        self.playOnly = False 
         
         self.frameSignal.connect(self.mainWidget.slotGetQimage)
         self.sigNormalDone.connect(self.mainWidget.slotDetectNormalDone)
@@ -210,6 +223,18 @@ class ThreadVideo(QThread):
         self.keepRunning = True
         self.videoDetector.loadVideo(videoPath=self.mainWidget.currentVideo)
        
+        if self.playOnly is False:
+            self.detectProcess()
+        else:
+            self.playProcess()
+        
+        self.videoDetector.releaseVideo()
+        
+        self.sigNormalDone.emit()
+        print("thread run done")
+   
+    #检测流程     
+    def detectProcess(self):
         while True:   
             self.mutex.lock()
             if self.keepRunning is False:
@@ -236,12 +261,39 @@ class ThreadVideo(QThread):
             
             self.frameSignal.emit(qimage)
             
-            QThread.msleep(self.timeInterval)
+            QThread.msleep(self.timeInterval)   
+    
+    #播放流程
+    def playProcess(self):
+        playInterval = self.timeInterval + 10
         
-        self.sigNormalDone.emit()
-        print("thread run done")
-        
-        
+        while True:   
+            self.mutex.lock()
+            if self.keepRunning is False:
+                self.videoDetector.releaseVideo()
+                self.mutex.unlock()
+                break
+            self.mutex.unlock()
+            
+            self.mutexPause.lock()
+            if self.pause:
+                self.mutexPause.unlock()
+                QThread.msleep(playInterval)
+                continue
+            self.mutexPause.unlock()
+            
+            ok, frame = self.videoDetector.readVideo()
+            if not ok:
+                self.videoDetector.releaseVideo()
+                break
+            frame = self.videoDetector.resizeFrame(frame) #调整大小
+            frame = self.videoDetector.adjustBright(frame) #调整亮度
+            qimage = self.videoDetector.frame2qimage(frame) #转换为qimage格式
+            
+            self.frameSignal.emit(qimage)
+            
+            QThread.msleep(playInterval)  
+      
     #中断视频检测
     def slotVideoDetect(self):
         #如果已经暂停，那么先恢复播放，然后才能正常退出
@@ -260,4 +312,9 @@ class ThreadVideo(QThread):
         else:
             self.pause = True
         self.mutexPause.unlock()
+        
+    
+    #设置是否进入纯播放模式
+    def switchPlay(self, playOnly=True):
+        self.playOnly = playOnly
         
