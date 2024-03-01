@@ -4,3 +4,5 @@ based on  SVM & HOG
 
 # 效果图
 ![主界面](./demo_img/ui.bmp)
+
+![检测结果](./demo_img/run.bmp)
