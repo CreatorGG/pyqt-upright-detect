@@ -139,7 +139,7 @@ class MainWidget(QWidget):
         while self.threadVideo.isRunning():
             pass
             
-        self.currentVideo, fileType = QFileDialog.getOpenFileName(self, "选择视频", "..\\", "video(*)")
+        self.currentVideo, fileType = QFileDialog.getOpenFileName(self, "选择视频", ".\\", "video(*)")
         print(fileType)
         self.updateVideoInfo()
         
