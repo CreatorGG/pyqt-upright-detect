@@ -7,7 +7,7 @@ import cv2
 import imutils
 from imutils.object_detection import non_max_suppression
 
-from PyQt5.Qt import QImage
+from PyQt5.QtGui import QImage
 
 class VideoDetector(object):
 
@@ -16,7 +16,7 @@ class VideoDetector(object):
         self.__InitData()
     
     def __InitData(self):
-        self.hog = cv2.HOGDescriptor() #创建HOG检测器
+        self.hog : cv2.HOGDescriptor = cv2.HOGDescriptor() #创建HOG检测器
         self.loadTrained() #载入训练模型
         self.capture = None
         self.frameWidth = 600 #检测帧的宽度一致调整为600像素
@@ -66,7 +66,7 @@ class VideoDetector(object):
     def loadTrained(self, modelPath=None, useDefault=True):
         if useDefault or modelPath is None:
             #使用opencv自带的模型
-            self.hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
+            self.hog.setSVMDetector(cv2.HOGDescriptor.getDefaultPeopleDetector())
         else:
             self.hog.load(modelPath)
     
