@@ -3,8 +3,11 @@ Created on 2018年12月26日
 
 @author: Freedom
 '''
-from PyQt5.Qt import QWidget, QImage, QPixmap, QThread, pyqtSignal,\
-    QMutex
+
+from PyQt5.QtWidgets import QWidget
+from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtCore import QThread, pyqtSignal, QMutex
+
 from PyQt5.QtWidgets import QHBoxLayout, QPushButton, QVBoxLayout, QLabel,\
     QComboBox, QFileDialog, QSlider
     
