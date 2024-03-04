@@ -9,14 +9,14 @@ import sys
 from MainWidget import MainWidget
 
 def main():
+    
     app = QApplication(sys.argv) # sys.argv即命令行参数
     
     mainWidget = MainWidget() #新建一个主界面
     mainWidget.show()   #显示主界面
     
-    exit(app.exec_()) # app.exec_() 进入消息循环
+    return app.exec_() # app.exec_() 进入消息循环
     
-    return 0
 
 if __name__ == '__main__':
     main()
